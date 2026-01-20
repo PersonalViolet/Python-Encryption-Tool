@@ -117,63 +117,8 @@ class CryptoManager:
             
             file_size = os.path.getsize(input_path)
             processed_size = 0
-            
-            # with open(input_path, 'rb') as f_in, open(output_path, 'wb') as f_out:
-            #     # Write header: Salt + IV
-            #     f_out.write(salt)
-            #     f_out.write(iv)
-            #
-            #     while True:
-            #         chunk = f_in.read(self.CHUNK_SIZE)
-            #         if len(chunk) == 0:
-            #             break
-            #
-            #         processed_size += len(chunk)
-            #
-            #         if len(chunk) < self.CHUNK_SIZE:
-            #             # Last chunk, needs padding
-            #             padded_chunk = self._pad_data(chunk)
-            #             f_out.write(encryptor.update(padded_chunk) + encryptor.finalize())
-            #         else:
-            #             # Full chunk.
-            #             # Note: Padding PKCS7 on stream is tricky.
-            #             # Usually we treat the whole file as one message.
-            #             # Standard approach for streams: Pad only the last block.
-            #             # Cryptography's padder handles this if we feed it right,
-            #             # but we need to know if it's the last chunk.
-            #             # The 'padder' object is stateful? No, padder is for one-shot or update().
-            #             # Actually, `padding.PKCS7` padder doesn't support stream updating easily if we don't know the end.
-            #             # BUT, we do know the end (len(chunk) < CHUNK_SIZE or next read is empty).
-            #             # Let's use a simpler approach: Read all? No, memory issues.
-            #             # Correct streaming padding:
-            #             # 1. Read chunk.
-            #             # 2. If it's the last chunk (EOF), pad it and encrypt.
-            #             # 3. If not last, encrypt raw.
-            #             # Wait, AES requires blocks of 16 bytes. If chunk is 64KB, it's a multiple of 16.
-            #             # So we can encrypt full chunks directly.
-            #             # Only the last chunk needs padding.
-            #
-            #             # Logic revision:
-            #             # AES CBC works on blocks. 64KB is multiple of 16.
-            #             # We can encrypt valid blocks directly.
-            #             # We only need the padder for the *final* bytes.
-            #             # BUT, PKCS7 always adds padding, even if multiple of 16 (adds a full block of 16s).
-            #             # So we can effectively say:
-            #             # - Loop read.
-            #             # - If next read is empty, this was the last chunk.
-            #             # - But we don't know if next read is empty until we try.
-            #             # Buffered approach:
-            #             pass
-            #
-            #         if progress_callback:
-            #             progress_callback(processed_size, file_size)
 
-            # Re-implementing file loop for correct padding
-            # We need to ensure we pad the final block.
-            # And we must ensure previous blocks are multiples of 16.
-            
-            # Reset
-            encryptor = cipher.encryptor() # Fresh encryptor
+            encryptor = cipher.encryptor()
             padder = padding.PKCS7(128).padder()
             
             with open(input_path, 'rb') as f_in, open(output_path, 'wb') as f_out:
@@ -183,10 +128,6 @@ class CryptoManager:
                 while True:
                     chunk = f_in.read(self.CHUNK_SIZE)
                     if len(chunk) == 0:
-                        # End of file. Finalize padding.
-                        # The padder might have pending data? No, we feed chunk by chunk.
-                        # If we feed chunk to padder.update(), it buffers.
-                        # Let's do this:
                         final_data = padder.finalize()
                         f_out.write(encryptor.update(final_data) + encryptor.finalize())
                         break
@@ -233,8 +174,6 @@ class CryptoManager:
                             # End of stream
                             final_unpadded = unpadder.finalize()
                             f_out.write(final_unpadded)
-                            # Decryptor finalize usually returns empty for CBC if aligned? 
-                            # Actually decryptor.finalize() checks for leftover bytes which shouldn't exist in CBC if padded correctly.
                             decryptor.finalize() 
                             break
                         

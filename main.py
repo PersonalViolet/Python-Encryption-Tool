@@ -3,6 +3,7 @@ from tkinter import ttk, filedialog, messagebox, scrolledtext
 import threading
 import os
 import datetime
+import json
 from crypto_manager import CryptoManager
 
 # Try to import tkinterdnd2 for Drag and Drop support
@@ -54,6 +55,8 @@ TRANSLATIONS = {
     "lang_label": {"en": "Language:", "zh": "语言:"}
 }
 
+CONFIG_FILE = "settings.json"
+
 class EncryptApp(BaseWindow):
     def __init__(self):
         super().__init__()
@@ -65,10 +68,38 @@ class EncryptApp(BaseWindow):
         
         self.lang_code = "en"
         self.translatable_widgets = [] # List of (widget, key, attribute_name)
+        
+        # Load settings before UI setup to apply language and paths
+        self.load_settings()
 
         self.setup_ui()
-        self.update_language() # Initial text set
+        self.update_language() # Apply language to UI
         
+    def load_settings(self):
+        """Load settings from JSON file."""
+        if os.path.exists(CONFIG_FILE):
+            try:
+                with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+                    settings = json.load(f)
+                    self.enc_output_path.set(settings.get("enc_output_path", ""))
+                    self.dec_output_path.set(settings.get("dec_output_path", ""))
+                    self.lang_code = settings.get("language", "en")
+            except Exception as e:
+                print(f"Failed to load settings: {e}")
+
+    def save_settings(self):
+        """Save current settings to JSON file."""
+        settings = {
+            "enc_output_path": self.enc_output_path.get(),
+            "dec_output_path": self.dec_output_path.get(),
+            "language": self.lang_code
+        }
+        try:
+            with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
+                json.dump(settings, f, ensure_ascii=False, indent=4)
+        except Exception as e:
+            print(f"Failed to save settings: {e}")
+
     def tr(self, key):
         """Translate a key to the current language."""
         return TRANSLATIONS.get(key, {}).get(self.lang_code, key)
@@ -95,6 +126,9 @@ class EncryptApp(BaseWindow):
                 self.lang_code = "zh"
             else:
                 self.lang_code = "en"
+            
+            # Save new language preference
+            self.save_settings()
         
         # Update registered widgets
         for widget, key, attr in self.translatable_widgets:
@@ -108,9 +142,6 @@ class EncryptApp(BaseWindow):
                     print(f"Failed to update widget {widget}: {e}")
 
         # Update dynamic status labels if they are "Ready"
-        # (This is a bit tricky, but we can reset them to Ready on lang change if they were Ready)
-        # Simplified: We just leave them as is, next operation will use new lang.
-        # But we can force update the "Ready" state if idle.
         if self.enc_status.cget("text") in ["Ready", "就绪"]:
              self.enc_status.config(text=self.tr("ready"))
         if self.dec_status.cget("text") in ["Ready", "就绪"]:
@@ -154,7 +185,12 @@ class EncryptApp(BaseWindow):
         lbl_lang.pack(side="left", padx=5)
 
         self.lang_combo = ttk.Combobox(top_frame, values=["English", "中文 (Chinese)"], state="readonly", width=15)
-        self.lang_combo.set("English")
+        # Set initial selection based on loaded settings
+        if self.lang_code == "zh":
+            self.lang_combo.set("中文 (Chinese)")
+        else:
+            self.lang_combo.set("English")
+            
         self.lang_combo.pack(side="left", padx=5)
         self.lang_combo.bind("<<ComboboxSelected>>", self.update_language)
 
@@ -203,14 +239,12 @@ class EncryptApp(BaseWindow):
         log_area = scrolledtext.ScrolledText(frame, height=15, state="disabled", font=("Consolas", 9))
         log_area.pack(fill="both", expand=True, pady=(0, 5))
         
-        if "Encrypt" in self.tr(btn_text_key) or "加密" in self.tr(btn_text_key): # Check intent via key ideally, but simplistic here
-            # Better to use the key passed
+        if "Encrypt" in self.tr(btn_text_key) or "加密" in self.tr(btn_text_key):
              if btn_text_key == "btn_encrypt":
                 self.enc_log = log_area
              else:
                 self.dec_log = log_area
         else:
-            # Fallback if I messed up logic above, rely on passed key
              if btn_text_key == "btn_encrypt":
                 self.enc_log = log_area
              else:
@@ -321,11 +355,15 @@ class EncryptApp(BaseWindow):
 
     def select_enc_out_dir(self):
         d = filedialog.askdirectory()
-        if d: self.enc_output_path.set(d)
+        if d: 
+            self.enc_output_path.set(d)
+            self.save_settings()
 
     def select_dec_out_dir(self):
         d = filedialog.askdirectory()
-        if d: self.dec_output_path.set(d)
+        if d: 
+            self.dec_output_path.set(d)
+            self.save_settings()
 
     def select_file(self, var):
         f = filedialog.askopenfilename()
@@ -378,6 +416,14 @@ class EncryptApp(BaseWindow):
             return
 
         out_dir = output_dir_var.get()
+        if out_dir:
+            if not os.path.exists(out_dir):
+                try:
+                    os.makedirs(out_dir)
+                except OSError:
+                    # If cannot create, fallback to input directory
+                    out_dir = ""
+        
         if not out_dir:
             out_dir = os.path.dirname(in_path)
         
