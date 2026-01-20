@@ -16,10 +16,8 @@ This is a GUI-based encryption tool built with Python and Tkinter. It uses AES (
 
 ## Requirements
 
-- Python 3.8+
-- Dependencies listed in `requirements.txt`:
-  - `cryptography`
-  - `tkinterdnd2` (optional, for drag-and-drop support)
+- Python 3.10+
+- Dependencies listed in `requirements.txt`
 
 ## Installation
 
@@ -78,8 +76,23 @@ python main.py
 - **File Format**:
   - `[Salt (16 bytes)] [IV (16 bytes)] [Encrypted Data ...]`
 
-## Testing
+# ⚠️ 免责声明
 
-A sample test script `verify_and_generate_samples.py` is included to verify the cryptographic logic without the GUI.
-A sample file `test_sample.txt` and its encrypted version `test_sample.txt.enc` are provided.
-The password for the sample is: `TestSig123`
+本仓库包含的加密/解密程序仅为**学习、研究和实验目的**而提供。作者不保证其安全性、完整性或适用性，使用本程序所产生的一切风险及后果由使用者自行承担。
+
+## 重要声明
+
+1. **非专业用途**
+   本程序仅为教学示例，**不适用于**保护真实场景中的敏感数据。其加密实现可能包含漏洞，无法达到工业级安全标准。
+2. **禁止用于非法用途**
+   使用者不得将本程序用于任何非法活动，包括但不限于侵犯隐私、破坏系统或违反当地法律法规的行为。作者对任何滥用行为概不负责。
+3. **无担保责任**
+   本程序按“原样”提供，作者明确不承担任何明示或暗示的担保责任，包括但不限于对适用性、特定功能或安全性的担保。使用本程序造成的任何直接或间接损失，作者不承担法律责任。
+4. **自行承担风险**
+   任何使用者应自行评估程序的安全性及合规性，并在必要时咨询安全专家或法律顾问。
+
+## 建议
+
+- 请勿使用本程序处理真实敏感数据。
+- 欢迎提交问题或改进代码，但请勿要求作者提供安全审计或技术支持。
+- 如发现安全漏洞，请通过 GitHub Issues 告知。
