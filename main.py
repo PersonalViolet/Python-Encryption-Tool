@@ -19,8 +19,8 @@ except ImportError:
 TRANSLATIONS = {
     "title": {"en": "Python Encryption Tool (PBKDF2 + AES)", "zh": "Python 加密工具 (PBKDF2 + AES)"},
     "control_panel": {"en": "Control Panel", "zh": "控制面板"},
-    "signature": {"en": "Signature:", "zh": "签名:"},
-    "confirm_sign": {"en": "Confirm Sign", "zh": "确认签名"},
+    "password": {"en": "密码:", "zh": "密码:"},
+    "confirm_pwd": {"en": "confirm pwd", "zh": "确认密码"},
     "algorithm": {"en": "Algorithm:", "zh": "算法:"},
     "set_enc_out": {"en": "Set Enc Output Dir", "zh": "设置加密输出目录"},
     "set_dec_out": {"en": "Set Dec Output Dir", "zh": "设置解密输出目录"},
@@ -40,24 +40,33 @@ TRANSLATIONS = {
     "ready": {"en": "Ready", "zh": "就绪"},
     "processing": {"en": "Processing...", "zh": "处理中..."},
     "done": {"en": "Done!", "zh": "完成!"},
-    "missing_sig_title": {"en": "Missing Signature", "zh": "缺少签名"},
-    "missing_sig_msg": {"en": "Please enter a signature first.", "zh": "请先输入签名。"},
-    "sig_conf_title": {"en": "Signature Confirmed", "zh": "签名已确认"},
-    "sig_conf_msg": {"en": "Signature captured. PBKDF2 salt will be generated during operations.", "zh": "签名已捕获。PBKDF2 盐值将在操作期间生成。"},
-    "sig_empty_msg": {"en": "Signature is empty!", "zh": "签名为空！"},
+    "missing_pwd_title": {"en": "Missing Password", "zh": "缺少密码"},
+    "missing_pwd_msg": {"en": "Please enter a password first.", "zh": "请先输入密码。"},
+    "pwd_conf_title": {"en": "Password Confirmed", "zh": "密码已确认"},
+    "pwd_conf_msg": {"en": "Password captured.", "zh": "密码已捕获。"},
+    "pwd_empty_msg": {"en": "Password is empty!", "zh": "密码为空！"},
     "warning": {"en": "Warning", "zh": "警告"},
     "error": {"en": "Error", "zh": "错误"},
     "file_error_title": {"en": "File Error", "zh": "文件错误"},
     "file_error_msg": {"en": "Invalid input file.", "zh": "无效的输入文件。"},
     "op_complete": {"en": "Complete", "zh": "完成"},
     "saved_to": {"en": "Saved to:", "zh": "保存至:"},
-    "dec_fail_msg": {"en": "Decryption failed. Check signature or format.", "zh": "解密失败。请检查签名或格式。"},
-    "lang_label": {"en": "Language:", "zh": "语言:"}
+    "dec_fail_msg": {"en": "Decryption failed. Check Password or format.", "zh": "解密失败。请检查密码或格式。"},
+    "lang_label": {"en": "Language:", "zh": "语言:"},
+    "iterations": {"en": "Iterations(0<x<100000000):", "zh": "迭代次数(0<x<100000000):"},
+    "confirm_iterations": {"en": "Confirm Iterations", "zh": "确认迭代次数"},
+    "missing_iterations_title": {"en": "Missing Iterations", "zh": "缺少迭代次数"},
+    "missing_iterations_msg": {"en": "Iterations cannot be empty!", "zh": "迭代次数不能为空！"},
+    "iterations_conf_msg": {"en": "Iterations confirmed.", "zh": "迭代次数已确认。"},
+    "iterations_empty_msg": {"en": "Iterations is empty!", "zh": "迭代次数为空！"},
+    "iterations_max_restrict": {"en": "Iterations cannot exceed 100000000!", "zh": "迭代次数不能超过100000000！"},
 }
 
 CONFIG_FILE = "settings.json"
 
 class EncryptApp(BaseWindow):
+    # MAX_ITERATIONS
+    MAX_ITERATIONS = 100_000_000
     def __init__(self):
         super().__init__()
         self.crypto = CryptoManager()
@@ -65,6 +74,7 @@ class EncryptApp(BaseWindow):
         self.dec_output_path = tk.StringVar()
         self.selected_enc_file = tk.StringVar()
         self.selected_dec_file = tk.StringVar()
+        self.iterations_var = tk.StringVar()
         
         self.lang_code = "en"
         self.translatable_widgets = [] # List of (widget, key, attribute_name)
@@ -84,6 +94,7 @@ class EncryptApp(BaseWindow):
                     self.enc_output_path.set(settings.get("enc_output_path", ""))
                     self.dec_output_path.set(settings.get("dec_output_path", ""))
                     self.lang_code = settings.get("language", "en")
+                    self.iterations_var.set(settings.get("iterations", "100000"))
             except Exception as e:
                 print(f"Failed to load settings: {e}")
 
@@ -92,7 +103,8 @@ class EncryptApp(BaseWindow):
         settings = {
             "enc_output_path": self.enc_output_path.get(),
             "dec_output_path": self.dec_output_path.get(),
-            "language": self.lang_code
+            "language": self.lang_code,
+            "iterations": int(self.iterations_var.get())
         }
         try:
             with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
@@ -157,17 +169,17 @@ class EncryptApp(BaseWindow):
         self.register_widget(top_frame, "control_panel", "text")
         top_frame.pack(fill="x", padx=10, pady=5)
         
-        # Signature
-        lbl_sig = ttk.Label(top_frame)
-        self.register_widget(lbl_sig, "signature")
-        lbl_sig.pack(side="left", padx=5)
+        # password
+        lbl_pwd = ttk.Label(top_frame)
+        self.register_widget(lbl_pwd, "password")
+        lbl_pwd.pack(side="left", padx=5)
 
-        self.sig_entry = ttk.Entry(top_frame, width=20, show="*")
-        self.sig_entry.pack(side="left", padx=5)
+        self.pwd_entry = ttk.Entry(top_frame, width=20, show="*")
+        self.pwd_entry.pack(side="left", padx=5)
         
-        self.btn_confirm_sig = ttk.Button(top_frame, command=self.confirm_signature)
-        self.register_widget(self.btn_confirm_sig, "confirm_sign")
-        self.btn_confirm_sig.pack(side="left", padx=5)
+        self.btn_confirm_pwd = ttk.Button(top_frame, command=self.confirm_password)
+        self.register_widget(self.btn_confirm_pwd, "confirm_pwd")
+        self.btn_confirm_pwd.pack(side="left", padx=5)
         
         # Algorithm
         lbl_algo = ttk.Label(top_frame)
@@ -193,6 +205,19 @@ class EncryptApp(BaseWindow):
             
         self.lang_combo.pack(side="left", padx=5)
         self.lang_combo.bind("<<ComboboxSelected>>", self.update_language)
+
+        #iterations
+        lbl_iter = ttk.Label(top_frame)
+        self.register_widget(lbl_iter, "iterations")
+        lbl_iter.pack(side="left", padx=5)
+
+        self.iter_entry = ttk.Entry(top_frame, width=20, textvariable=self.iterations_var)
+        self.iter_entry.pack(side="left", padx=5)
+
+        self.btn_confirm_iterations = ttk.Button(top_frame, command=self.confirm_iterations)
+        self.register_widget(self.btn_confirm_iterations, "confirm_iterations")
+        self.btn_confirm_iterations.pack(side="left", padx=5)
+
 
         # Output Paths
         btn_enc_out = ttk.Button(top_frame, command=self.select_enc_out_dir)
@@ -339,19 +364,65 @@ class EncryptApp(BaseWindow):
         area.see("end")
         area.config(state="disabled")
 
-    def get_signature(self):
-        sig = self.sig_entry.get()
-        if not sig:
-            messagebox.showwarning(self.tr("missing_sig_title"), self.tr("missing_sig_msg"))
+    def get_password(self):
+        pwd = self.pwd_entry.get()
+        if not pwd:
+            messagebox.showwarning(self.tr("missing_pwd_title"), self.tr("missing_pwd_msg"))
             return None
-        return sig
+        return pwd
 
-    def confirm_signature(self):
-        sig = self.sig_entry.get()
-        if sig:
-            messagebox.showinfo(self.tr("sig_conf_title"), self.tr("sig_conf_msg"))
+    def confirm_password(self):
+        pwd = self.pwd_entry.get()
+        if pwd:
+            messagebox.showinfo(self.tr("pwd_conf_title"), self.tr("pwd_conf_msg"))
         else:
-            messagebox.showwarning(self.tr("warning"), self.tr("sig_empty_msg"))
+            messagebox.showwarning(self.tr("warning"), self.tr("pwd_empty_msg"))
+
+    def check_iterations(self):
+        try:
+            iterations_str = self.iter_entry.get()
+            if not iterations_str:
+                messagebox.showwarning(self.tr("missing_iterations_title"), self.tr("missing_iterations_msg"))
+                return False
+
+            iterations = int(iterations_str)
+
+            if iterations <= 0:
+                messagebox.showwarning(self.tr("warning"), self.tr("iterations_empty_msg"))
+                return False
+
+            if iterations > self.MAX_ITERATIONS:
+                messagebox.showerror(self.tr("error"), self.tr("iterations_max_restrict"))
+                return False
+            return True
+        except ValueError:
+            messagebox.showerror(self.tr("error"), "Invalid number format!")
+            return False
+
+    def get_iterations(self):
+        is_valid_iterations = self.check_iterations()
+        if not is_valid_iterations:
+            return None
+        else:
+            iterations = int(self.iter_entry.get())
+            if not iterations:
+                messagebox.showwarning(self.tr("missing_iterations_title"), self.tr("missing_iterations_msg"))
+                return None
+            self.crypto.ITERATIONS = iterations
+            return iterations
+
+    def confirm_iterations(self):
+        is_valid_iterations = self.check_iterations()
+        if not is_valid_iterations:
+            return None
+        else:
+            iterations = int(self.iter_entry.get())
+            if iterations:
+                messagebox.showinfo(self.tr("iterations_conf_title"), self.tr("iterations_conf_msg"))
+                self.crypto.ITERATIONS = iterations
+                self.save_settings()
+            else:
+                messagebox.showwarning(self.tr("warning"), self.tr("iterations_empty_msg"))
 
     def select_enc_out_dir(self):
         d = filedialog.askdirectory()
@@ -370,29 +441,33 @@ class EncryptApp(BaseWindow):
         if f: var.set(f)
 
     def action_encrypt_text(self):
-        sig = self.get_signature()
-        if not sig: return
+        pwd = self.get_password()
+        iterations = self.get_iterations()
+        if not iterations: return
+        if not pwd: return
         
         text = self.enc_input.get("1.0", "end-1c")
         if not text: return
         
         try:
             algo = self.algo_var.get()
-            result = self.crypto.encrypt_text(text, sig, algo)
+            result = self.crypto.encrypt_text(text, pwd, algo)
             self.log(self.enc_log, f"Encrypted ({algo}):\n{result}")
         except Exception as e:
             messagebox.showerror(self.tr("error"), str(e))
 
     def action_decrypt_text(self):
-        sig = self.get_signature()
-        if not sig: return
+        pwd = self.get_password()
+        iterations = self.get_iterations()
+        if not iterations: return
+        if not pwd: return
         
         text = self.dec_input.get("1.0", "end-1c")
         if not text: return
         
         try:
             algo = self.algo_var.get()
-            result = self.crypto.decrypt_text(text.strip(), sig, algo)
+            result = self.crypto.decrypt_text(text.strip(), pwd, algo)
             self.log(self.dec_log, f"Decrypted ({algo}):\n{result}")
         except Exception as e:
             self.log(self.dec_log, f"Error: {str(e)}")
@@ -407,8 +482,10 @@ class EncryptApp(BaseWindow):
                           self.crypto.decrypt_file, self.dec_pb, self.dec_status, ".dec", self.tr("file_dec_title"))
 
     def _run_file_op(self, input_var, output_dir_var, op_func, pb, status_lbl, suffix, op_name):
-        sig = self.get_signature()
-        if not sig: return
+        pwd = self.get_password()
+        iterations = self.get_iterations()
+        if not iterations: return
+        if not pwd: return
         
         in_path = input_var.get()
         if not in_path or not os.path.exists(in_path):
@@ -450,7 +527,7 @@ class EncryptApp(BaseWindow):
                     self.after(0, lambda: pb.config(value=perc))
                 
                 start_time = datetime.datetime.now()
-                op_func(in_path, out_path, sig, algo, progress)
+                op_func(in_path, out_path, pwd, algo, progress)
                 end_time = datetime.datetime.now()
                 
                 self.after(0, lambda: status_lbl.config(text=f"{str_done} ({end_time - start_time})", foreground="green"))
