@@ -2,3 +2,14 @@
 .venv/
 venv/
 env/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Log files
+*.log
+
+# IDE
+.idea/

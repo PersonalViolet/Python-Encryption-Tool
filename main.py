@@ -60,6 +60,14 @@ TRANSLATIONS = {
     "iterations_conf_msg": {"en": "Iterations confirmed.", "zh": "迭代次数已确认。"},
     "iterations_empty_msg": {"en": "Iterations is empty!", "zh": "迭代次数为空！"},
     "iterations_max_restrict": {"en": "Iterations cannot exceed 100000000!", "zh": "迭代次数不能超过100000000！"},
+    "use_timestamp": {"en": "Timestamp filename", "zh": "时间戳文件名"},
+    "delete_original": {"en": "Delete original", "zh": "删除原文件"},
+    "confirm_delete_title": {"en": "Confirm Delete", "zh": "确认删除"},
+    "confirm_delete_msg": {"en": "Delete the original file?\n{path}", "zh": "删除原始文件？\n{path}"},
+    "batch_select": {"en": "Batch Select", "zh": "批量选择"},
+    "batch_files_selected": {"en": "{count} files selected", "zh": "已选择 {count} 个文件"},
+    "batch_file_status": {"en": "File {done}/{total}", "zh": "文件 {done}/{total}"},
+    "file_delete_failed": {"en": "Failed to delete original: {err}", "zh": "删除原文件失败：{err}"},
 }
 
 CONFIG_FILE = "settings.json"
@@ -78,7 +86,17 @@ class EncryptApp(BaseWindow):
         
         self.lang_code = "en"
         self.translatable_widgets = [] # List of (widget, key, attribute_name)
-        
+
+        # Batch file lists for bulk operations
+        self.batch_enc_files = []
+        self.batch_dec_files = []
+
+        # Options for file operations
+        self.use_timestamp_enc = tk.BooleanVar()
+        self.use_timestamp_dec = tk.BooleanVar()
+        self.delete_original_enc = tk.BooleanVar()
+        self.delete_original_dec = tk.BooleanVar()
+
         # Load settings before UI setup to apply language and paths
         self.load_settings()
 
@@ -331,13 +349,36 @@ class EncryptApp(BaseWindow):
         btn_frame = ttk.Frame(sub_frame)
         btn_frame.pack(fill="x")
         
-        btn_sel = ttk.Button(btn_frame, command=lambda: self.select_file(path_var))
+        btn_sel = ttk.Button(btn_frame, command=lambda: self.select_file(path_var, mode))
         self.register_widget(btn_sel, "select_file")
         btn_sel.pack(side="left", padx=2)
+
+        btn_batch = ttk.Button(btn_frame, command=lambda: self.select_batch_files(path_var, mode))
+        self.register_widget(btn_batch, "batch_select")
+        btn_batch.pack(side="left", padx=2)
         
         btn_do = ttk.Button(btn_frame, command=btn_command)
         self.register_widget(btn_do, btn_text_key)
         btn_do.pack(side="right", padx=2)
+
+        # Options: timestamp filename and delete original
+        options_frame = ttk.Frame(sub_frame)
+        options_frame.pack(fill="x", pady=(2, 0))
+
+        if mode == "enc":
+            ts_var = self.use_timestamp_enc
+            del_var = self.delete_original_enc
+        else:
+            ts_var = self.use_timestamp_dec
+            del_var = self.delete_original_dec
+
+        cb_ts = ttk.Checkbutton(options_frame, variable=ts_var)
+        self.register_widget(cb_ts, "use_timestamp")
+        cb_ts.pack(side="left", padx=2)
+
+        cb_del = ttk.Checkbutton(options_frame, variable=del_var)
+        self.register_widget(cb_del, "delete_original")
+        cb_del.pack(side="left", padx=2)
         
         # Progress Bar
         pb = ttk.Progressbar(sub_frame, orient="horizontal", mode="determinate")
@@ -436,9 +477,29 @@ class EncryptApp(BaseWindow):
             self.dec_output_path.set(d)
             self.save_settings()
 
-    def select_file(self, var):
+    def select_file(self, var, mode=None):
         f = filedialog.askopenfilename()
-        if f: var.set(f)
+        if f:
+            var.set(f)
+            # Clear batch list when single file is selected
+            if mode == "enc":
+                self.batch_enc_files = []
+            elif mode == "dec":
+                self.batch_dec_files = []
+
+    def select_batch_files(self, path_var, mode):
+        files = filedialog.askopenfilenames()
+        if files:
+            files = list(files)
+            if mode == "enc":
+                self.batch_enc_files = files
+            else:
+                self.batch_dec_files = files
+            count = len(files)
+            if count == 1:
+                path_var.set(files[0])
+            else:
+                path_var.set(self.tr("batch_files_selected").format(count=count))
 
     def action_encrypt_text(self):
         pwd = self.get_password()
@@ -474,68 +535,131 @@ class EncryptApp(BaseWindow):
             messagebox.showerror(self.tr("error"), self.tr("dec_fail_msg"))
 
     def action_encrypt_file(self):
-        self._run_file_op(self.selected_enc_file, self.enc_output_path, 
-                          self.crypto.encrypt_file, self.enc_pb, self.enc_status, ".enc", self.tr("file_enc_title"))
+        files = self.batch_enc_files if self.batch_enc_files else [self.selected_enc_file.get()]
+        self._run_file_ops(files, self.enc_output_path,
+                           self.crypto.encrypt_file, self.enc_pb, self.enc_status, ".enc",
+                           self.tr("file_enc_title"),
+                           self.use_timestamp_enc.get(), self.delete_original_enc.get())
 
     def action_decrypt_file(self):
-        self._run_file_op(self.selected_dec_file, self.dec_output_path, 
-                          self.crypto.decrypt_file, self.dec_pb, self.dec_status, ".dec", self.tr("file_dec_title"))
+        files = self.batch_dec_files if self.batch_dec_files else [self.selected_dec_file.get()]
+        self._run_file_ops(files, self.dec_output_path,
+                           self.crypto.decrypt_file, self.dec_pb, self.dec_status, ".dec",
+                           self.tr("file_dec_title"),
+                           self.use_timestamp_dec.get(), self.delete_original_dec.get())
 
-    def _run_file_op(self, input_var, output_dir_var, op_func, pb, status_lbl, suffix, op_name):
+    def _run_file_ops(self, input_paths, output_dir_var, op_func, pb, status_lbl, suffix, op_name,
+                      use_timestamp=False, delete_original=False):
+        """Run file operation(s) on one or more files in a background thread."""
         pwd = self.get_password()
         iterations = self.get_iterations()
         if not iterations: return
         if not pwd: return
-        
-        in_path = input_var.get()
-        if not in_path or not os.path.exists(in_path):
+
+        # Validate all input paths
+        valid_paths = [p for p in input_paths if p and os.path.exists(p)]
+        if not valid_paths:
             messagebox.showwarning(self.tr("file_error_title"), self.tr("file_error_msg"))
             return
 
         out_dir = output_dir_var.get()
-        if out_dir:
-            if not os.path.exists(out_dir):
-                try:
-                    os.makedirs(out_dir)
-                except OSError:
-                    # If cannot create, fallback to input directory
-                    out_dir = ""
-        
-        if not out_dir:
-            out_dir = os.path.dirname(in_path)
-        
-        base_name = os.path.basename(in_path)
-        out_path = os.path.join(out_dir, base_name + suffix)
-        
+        if out_dir and not os.path.exists(out_dir):
+            try:
+                os.makedirs(out_dir)
+            except OSError:
+                out_dir = ""
+
         algo = self.algo_var.get()
-        
-        # Prepare translated strings for the thread
+        total_files = len(valid_paths)
+
+        # Translate strings once before entering thread
         str_processing = self.tr("processing")
         str_done = self.tr("done")
         str_complete = self.tr("op_complete")
         str_saved = self.tr("saved_to")
         str_error = self.tr("error")
-        
+        str_file_status = self.tr("batch_file_status")
+        str_confirm_delete_title = self.tr("confirm_delete_title")
+        str_confirm_delete_msg = self.tr("confirm_delete_msg")
+        str_file_delete_failed = self.tr("file_delete_failed")
+
+        # Shared state for progress polling
+        progress_info = {"file_value": 0, "done": False}
+
+        def poll_progress():
+            pb.config(value=progress_info["file_value"])
+            if not progress_info["done"]:
+                self.after(50, poll_progress)
+
         def worker():
             try:
-                # Update UI
                 self.after(0, lambda: status_lbl.config(text=str_processing, foreground="blue"))
                 self.after(0, lambda: pb.config(value=0))
-                
-                def progress(current, total):
-                    perc = (current / total) * 100
-                    self.after(0, lambda: pb.config(value=perc))
-                
+                self.after(50, poll_progress)
+
+                saved_paths = []
+                completed_inputs = []  # collect originals for deferred deletion
                 start_time = datetime.datetime.now()
-                op_func(in_path, out_path, pwd, algo, progress)
+
+                for idx, in_path in enumerate(valid_paths):
+                    # Build output path
+                    file_out_dir = out_dir if out_dir else os.path.dirname(in_path)
+                    if use_timestamp:
+                        ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+                        out_name = ts + suffix
+                    else:
+                        base_name = os.path.basename(in_path)
+                        out_name = base_name + suffix
+                    out_path = os.path.join(file_out_dir, out_name)
+
+                    # Update status for batch
+                    if total_files > 1:
+                        status_text = str_file_status.format(done=idx + 1, total=total_files)
+                        self.after(0, lambda t=status_text: status_lbl.config(text=t, foreground="blue"))
+
+                    # progress_info is written here and read on main thread via poll_progress.
+                    # Simple int assignment is atomic under CPython's GIL, so no lock needed.
+                    progress_info["file_value"] = 0
+
+                    def progress(current, total, pi=progress_info):
+                        if total > 0:
+                            pi["file_value"] = int((current / total) * 100)
+
+                    op_func(in_path, out_path, pwd, algo, progress)
+                    progress_info["file_value"] = 100
+                    saved_paths.append(out_path)
+                    if delete_original:
+                        completed_inputs.append(in_path)
+
                 end_time = datetime.datetime.now()
-                
-                self.after(0, lambda: status_lbl.config(text=f"{str_done} ({end_time - start_time})", foreground="green"))
-                self.after(0, lambda: messagebox.showinfo(f"{op_name} {str_complete}", f"{str_saved}\n{out_path}"))
-                
+                elapsed = end_time - start_time
+                progress_info["done"] = True
+
+                done_text = f"{str_done} ({elapsed})"
+                self.after(0, lambda t=done_text: status_lbl.config(text=t, foreground="green"))
+                saved_msg = f"{str_saved}\n" + "\n".join(saved_paths)
+                self.after(0, lambda m=saved_msg: messagebox.showinfo(f"{op_name} {str_complete}", m))
+
+                # Prompt deletion for each completed original after all operations finish.
+                # Must run on the main thread since it shows dialogs.
+                def prompt_deletions(paths=completed_inputs):
+                    for orig_path in paths:
+                        msg = str_confirm_delete_msg.format(path=orig_path)
+                        if messagebox.askyesno(str_confirm_delete_title, msg):
+                            try:
+                                os.remove(orig_path)
+                            except Exception as del_err:
+                                err_msg = str_file_delete_failed.format(err=str(del_err))
+                                messagebox.showwarning(str_error, err_msg)
+
+                if completed_inputs:
+                    self.after(0, prompt_deletions)
+
             except Exception as e:
-                self.after(0, lambda: status_lbl.config(text=f"{str_error}: {str(e)}", foreground="red"))
-                self.after(0, lambda: messagebox.showerror(str_error, str(e)))
+                progress_info["done"] = True
+                err_text = f"{str_error}: {str(e)}"
+                self.after(0, lambda t=err_text: status_lbl.config(text=t, foreground="red"))
+                self.after(0, lambda m=str(e): messagebox.showerror(str_error, m))
 
         threading.Thread(target=worker, daemon=True).start()
 
