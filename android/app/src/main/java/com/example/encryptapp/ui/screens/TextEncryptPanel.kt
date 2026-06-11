@@ -26,7 +26,9 @@ fun TextEncryptPanel(
     historyLabel: String,
     inputLabel: String,
     btnLabel: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    copyLabel: String = "Copy",
+    copySuccessLabel: String = "Copied to clipboard"
 ) {
     Card(modifier = modifier.fillMaxHeight()) {
         Column(
@@ -46,7 +48,9 @@ fun TextEncryptPanel(
             ResultLog(
                 entries = logEntries,
                 label = historyLabel,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                copyLabel = copyLabel,
+                copySuccessLabel = copySuccessLabel
             )
 
             Spacer(modifier = Modifier.height(8.dp))

@@ -4,13 +4,51 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+
+    <!-- Padlock shackle (拱形) -->
     <path
-        android:fillColor="#1B5E20"
-        android:pathData="M34,44 L34,64 L44,64 L44,54 L54,54 L54,64 L64,64 L64,44 Z" />
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.95"
+        android:pathData="M34,46
+            C34,34 40,28 54,28
+            C68,28 74,34 74,46
+            L74,50
+            L70,50
+            L70,46
+            C70,37 66,32 54,32
+            C42,32 38,37 38,46
+            L38,50
+            L34,50 Z" />
+
+    <!-- Padlock body (锁体) -->
     <path
-        android:fillColor="#4CAF50"
-        android:pathData="M40,50 L40,58 L48,58 L48,50 Z" />
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.95"
+        android:pathData="M30,50 L78,50
+            C80,50 82,52 82,54
+            L82,76
+            C82,80 80,82 76,82
+            L32,82
+            C28,82 26,80 26,76
+            L26,54
+            C26,52 28,50 30,50 Z" />
+
+    <!-- Keyhole outer circle -->
     <path
-        android:fillColor="#1B5E20"
-        android:pathData="M44,34 L64,34 L64,44 L54,44 L54,38 L50,38 L50,44 L44,44 Z" />
+        android:fillColor="#1565C0"
+        android:pathData="M54,62
+            m-5,0
+            a5,5 0,1 1,10 0
+            a5,5 0,0 1,-10 0 Z" />
+
+    <!-- Keyhole slot -->
+    <path
+        android:fillColor="#1565C0"
+        android:pathData="M51,65 L57,65 L56,73 L52,73 Z" />
+
+    <!-- Small shine detail on lock body -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.15"
+        android:pathData="M34,54 L44,54 L44,78 L34,78 Z" />
 </vector>

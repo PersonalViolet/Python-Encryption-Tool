@@ -20,7 +20,8 @@ data class FileOpState(
     val isProcessing: Boolean = false,
     val progress: Float = 0f,
     val error: String? = null,
-    val elapsedMs: Long = 0L
+    val elapsedMs: Long = 0L,
+    val outputPath: String? = null
 )
 
 @HiltViewModel
@@ -85,7 +86,8 @@ class FileOpsViewModel @Inject constructor(
                 _encState.value = FileOpState(
                     status = "Done!",
                     progress = 1f,
-                    elapsedMs = elapsed
+                    elapsedMs = elapsed,
+                    outputPath = outputUri.toString()
                 )
                 onComplete(true, outputUri.toString())
 
@@ -151,7 +153,8 @@ class FileOpsViewModel @Inject constructor(
                 _decState.value = FileOpState(
                     status = "Done!",
                     progress = 1f,
-                    elapsedMs = elapsed
+                    elapsedMs = elapsed,
+                    outputPath = outputUri.toString()
                 )
                 onComplete(true, outputUri.toString())
 

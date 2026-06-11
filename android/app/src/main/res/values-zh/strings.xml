@@ -47,4 +47,7 @@
     <string name="encrypted_result">已加密:</string>
     <string name="decrypted_result">已解密:</string>
     <string name="no_file_selected">未选择文件</string>
+    <string name="copy">复制</string>
+    <string name="copy_success">已复制到剪贴板</string>
+    <string name="output_path">输出:</string>
 </resources>

@@ -167,7 +167,9 @@ fun HomeScreen(
                             historyLabel = if (isZh) "历史/结果:" else "History/Results:",
                             inputLabel = if (isZh) "输入文本:" else "Input Text:",
                             btnLabel = if (isZh) "加密" else "Encrypt",
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            copyLabel = if (isZh) "复制" else "Copy",
+                            copySuccessLabel = if (isZh) "已复制到剪贴板" else "Copied to clipboard"
                         )
 
                         TextDecryptPanel(
@@ -186,7 +188,9 @@ fun HomeScreen(
                             historyLabel = if (isZh) "历史/结果:" else "History/Results:",
                             inputLabel = if (isZh) "输入文本:" else "Input Text:",
                             btnLabel = if (isZh) "解密" else "Decrypt",
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            copyLabel = if (isZh) "复制" else "Copy",
+                            copySuccessLabel = if (isZh) "已复制到剪贴板" else "Copied to clipboard"
                         )
 
                         FileOpsPanel(
@@ -235,7 +239,10 @@ fun HomeScreen(
                             btnEncFileLabel = if (isZh) "加密文件" else "Encrypt File",
                             decTitle = if (isZh) "文件解密" else "File Decryption",
                             btnDecFileLabel = if (isZh) "解密文件" else "Decrypt File",
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            copyLabel = if (isZh) "复制" else "Copy",
+                            copySuccessLabel = if (isZh) "已复制到剪贴板" else "Copied to clipboard",
+                            outputPathLabel = if (isZh) "输出:" else "Output:"
                         )
                     }
                 } else {
@@ -356,7 +363,9 @@ private fun NarrowLayout(
                 historyLabel = if (isZh) "历史/结果:" else "History/Results:",
                 inputLabel = if (isZh) "输入文本:" else "Input Text:",
                 btnLabel = if (isZh) "加密" else "Encrypt",
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                copyLabel = if (isZh) "复制" else "Copy",
+                copySuccessLabel = if (isZh) "已复制到剪贴板" else "Copied to clipboard"
             )
             1 -> TextDecryptPanel(
                 inputText = decInputText,
@@ -370,7 +379,9 @@ private fun NarrowLayout(
                 historyLabel = if (isZh) "历史/结果:" else "History/Results:",
                 inputLabel = if (isZh) "输入文本:" else "Input Text:",
                 btnLabel = if (isZh) "解密" else "Decrypt",
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                copyLabel = if (isZh) "复制" else "Copy",
+                copySuccessLabel = if (isZh) "已复制到剪贴板" else "Copied to clipboard"
             )
             2 -> FileOpsPanel(
                 encFileUri = encFileUri,
@@ -390,7 +401,10 @@ private fun NarrowLayout(
                 btnEncFileLabel = if (isZh) "加密文件" else "Encrypt File",
                 decTitle = if (isZh) "文件解密" else "File Decryption",
                 btnDecFileLabel = if (isZh) "解密文件" else "Decrypt File",
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                copyLabel = if (isZh) "复制" else "Copy",
+                copySuccessLabel = if (isZh) "已复制到剪贴板" else "Copied to clipboard",
+                outputPathLabel = if (isZh) "输出:" else "Output:"
             )
         }
     }

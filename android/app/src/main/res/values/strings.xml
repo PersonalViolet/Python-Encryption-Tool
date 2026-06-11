@@ -47,4 +47,7 @@
     <string name="encrypted_result">Encrypted:</string>
     <string name="decrypted_result">Decrypted:</string>
     <string name="no_file_selected">No file selected</string>
+    <string name="copy">Copy</string>
+    <string name="copy_success">Copied to clipboard</string>
+    <string name="output_path">Output:</string>
 </resources>
