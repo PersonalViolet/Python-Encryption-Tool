@@ -93,7 +93,13 @@ jobs:
 
       - name: Build APK
         working-directory: android
-        run: /opt/gradle-8.7/bin/gradle assembleDebug
+        run: |
+          echo "=== Gradle version ==="
+          /opt/gradle-8.7/bin/gradle --version
+          echo "=== local.properties ==="
+          cat local.properties
+          echo "=== Building APK ==="
+          /opt/gradle-8.7/bin/gradle assembleDebug --stacktrace --info 2>&1 | tail -150
         env:
           ANDROID_HOME: /usr/local/lib/android/sdk
 
