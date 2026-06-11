@@ -27,31 +27,34 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Install Gradle 8.7
+      - name: Install Gradle & Android SDK
         run: |
+          # Install Gradle 8.7
           wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip -O /tmp/gradle.zip
           sudo unzip -q /tmp/gradle.zip -d /opt
-          echo "/opt/gradle-8.7/bin" >> $GITHUB_PATH
 
-      - name: Setup Android SDK
-        run: |
-          export SDK=/usr/local/lib/android/sdk
-          echo "ANDROID_HOME=$SDK"
-          # Ensure required platform is installed
-          if [ ! -d "$SDK/platforms/android-34" ]; then
-            echo "Installing android-34 platform..."
-            if [ -f "$SDK/cmdline-tools/latest/bin/sdkmanager" ]; then
-              yes | $SDK/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
-              $SDK/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" > /dev/null 2>&1
-            fi
+          # Setup Android SDK
+          export ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+          ls -la $ANDROID_SDK_ROOT/platforms/ 2>/dev/null || echo "Initial platforms: (empty)"
+
+          # Install required SDK components
+          if [ -f "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" ]; then
+            yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
+            $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager \
+              "platforms;android-34" \
+              "build-tools;34.0.0" 2>&1 | tail -5
           fi
-          echo "sdk.dir=$SDK" > android/local.properties
+
+          # Create local.properties
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > android/local.properties
+          echo "Gradle installed. Android SDK ready."
 
       - name: Run unit tests
         working-directory: android
         run: /opt/gradle-8.7/bin/gradle testDebugUnitTest 2>&1 | tail -60
         env:
-          ANDROID_HOME: /usr/local/lib/android/sdk
+          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
 
       - name: Upload test reports
         uses: actions/upload-artifact@v4
@@ -75,33 +78,37 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Install Gradle 8.7
+      - name: Install Gradle & Android SDK
         run: |
+          # Install Gradle 8.7
           wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip -O /tmp/gradle.zip
           sudo unzip -q /tmp/gradle.zip -d /opt
 
-      - name: Setup Android SDK
-        run: |
-          export SDK=/usr/local/lib/android/sdk
-          if [ ! -d "$SDK/platforms/android-34" ]; then
-            if [ -f "$SDK/cmdline-tools/latest/bin/sdkmanager" ]; then
-              yes | $SDK/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
-              $SDK/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" > /dev/null 2>&1
-            fi
+          # Setup Android SDK
+          export ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+
+          # Install required SDK components
+          if [ -f "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" ]; then
+            yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
+            $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager \
+              "platforms;android-34" \
+              "build-tools;34.0.0" 2>&1 | tail -5
           fi
-          echo "sdk.dir=$SDK" > android/local.properties
+
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > android/local.properties
 
       - name: Build APK
         working-directory: android
         run: |
-          echo "=== Gradle version ==="
-          /opt/gradle-8.7/bin/gradle --version
-          echo "=== local.properties ==="
+          echo "=== SDK Config ==="
           cat local.properties
-          echo "=== Building APK ==="
-          /opt/gradle-8.7/bin/gradle assembleDebug --stacktrace --info 2>&1 | tail -150
+          echo "=== Gradle Version ==="
+          /opt/gradle-8.7/bin/gradle --version 2>&1 | head -3
+          echo "=== Building ==="
+          /opt/gradle-8.7/bin/gradle assembleDebug --stacktrace --no-daemon 2>&1 | tail -120
         env:
-          ANDROID_HOME: /usr/local/lib/android/sdk
+          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
