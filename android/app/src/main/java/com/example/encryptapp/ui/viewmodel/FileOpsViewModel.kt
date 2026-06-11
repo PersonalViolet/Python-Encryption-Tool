@@ -38,6 +38,7 @@ class FileOpsViewModel @Inject constructor(
 
     fun encryptFile(
         inputUri: Uri,
+        outputUri: Uri,
         password: String,
         algorithm: Algorithm,
         iterations: Int,
@@ -61,10 +62,7 @@ class FileOpsViewModel @Inject constructor(
 
                 val fileSize = inputStream.available().toLong().coerceAtLeast(1)
 
-                // Determine output path: same dir as input, with .enc extension
-                val fileName = inputUri.lastPathSegment ?: "encrypted"
-                val outputUri = Uri.parse("${inputUri}.enc")
-
+                // Write to the SAF-provided output URI (already has write permission)
                 val outputStream = context.contentResolver.openOutputStream(outputUri, "wt")
                     ?: throw IllegalStateException("Cannot create output file")
 
@@ -103,6 +101,7 @@ class FileOpsViewModel @Inject constructor(
 
     fun decryptFile(
         inputUri: Uri,
+        outputUri: Uri,
         password: String,
         algorithm: Algorithm,
         iterations: Int,
@@ -129,9 +128,7 @@ class FileOpsViewModel @Inject constructor(
                     throw IllegalArgumentException("File too small to be a valid encrypted file")
                 }
 
-                val fileName = inputUri.lastPathSegment ?: "decrypted"
-                val outputUri = Uri.parse("${inputUri}.dec")
-
+                // Write to the SAF-provided output URI (already has write permission)
                 val outputStream = context.contentResolver.openOutputStream(outputUri, "wt")
                     ?: throw IllegalStateException("Cannot create output file")
 

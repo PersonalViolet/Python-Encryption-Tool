@@ -3,6 +3,8 @@ package com.example.encryptapp.ui.screens
 import android.content.Context
 import android.net.Uri
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -58,6 +60,41 @@ fun HomeScreen(
     var encFileName by remember { mutableStateOf("") }
     var decFileUri by remember { mutableStateOf<Uri?>(null) }
     var decFileName by remember { mutableStateOf("") }
+
+    // CreateDocument launchers for output file selection (SAF write permission)
+    val encOutputLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/octet-stream")
+    ) { outputUri: Uri? ->
+        outputUri?.let { outUri ->
+            encFileUri?.let { inUri ->
+                validateAndGetIterations()?.let { iters ->
+                    fileOpsViewModel.encryptFile(inUri, outUri, password, algorithm, iters) { success, path ->
+                        if (success) {
+                            val msg = if (isZh) "保存至: $path" else "Saved to: $path"
+                            Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    val decOutputLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/octet-stream")
+    ) { outputUri: Uri? ->
+        outputUri?.let { outUri ->
+            decFileUri?.let { inUri ->
+                validateAndGetIterations()?.let { iters ->
+                    fileOpsViewModel.decryptFile(inUri, outUri, password, algorithm, iters) { success, path ->
+                        if (success) {
+                            val msg = if (isZh) "保存至: $path" else "Saved to: $path"
+                            Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     val isZh = language == "zh"
 
@@ -202,15 +239,12 @@ fun HomeScreen(
                             },
                             encState = encFileState,
                             onEncryptFile = {
-                                encFileUri?.let { uri ->
-                                    validateAndGetIterations()?.let { iters ->
-                                        fileOpsViewModel.encryptFile(uri, password, algorithm, iters) { success, path ->
-                                            if (success) {
-                                                val msg = if (isZh) "保存至: $path" else "Saved to: $path"
-                                                Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
-                                            }
-                                        }
+                                validateAndGetIterations()?.let {
+                                    val suggestedName = encFileName.let { name ->
+                                        if (name.contains('.')) name.substringBeforeLast('.') + ".enc"
+                                        else "$name.enc"
                                     }
+                                    encOutputLauncher.launch(suggestedName)
                                 }
                             },
                             decFileUri = decFileUri,
@@ -221,15 +255,12 @@ fun HomeScreen(
                             },
                             decState = decFileState,
                             onDecryptFile = {
-                                decFileUri?.let { uri ->
-                                    validateAndGetIterations()?.let { iters ->
-                                        fileOpsViewModel.decryptFile(uri, password, algorithm, iters) { success, path ->
-                                            if (success) {
-                                                val msg = if (isZh) "保存至: $path" else "Saved to: $path"
-                                                Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
-                                            }
-                                        }
+                                validateAndGetIterations()?.let {
+                                    val suggestedName = decFileName.let { name ->
+                                        if (name.contains('.')) name.substringBeforeLast('.') + ".dec"
+                                        else "$name.dec"
                                     }
+                                    decOutputLauncher.launch(suggestedName)
                                 }
                             },
                             title = if (isZh) "文件操作" else "File Operations",
@@ -277,10 +308,12 @@ fun HomeScreen(
                         },
                         encFileState = encFileState,
                         onEncryptFile = {
-                            encFileUri?.let { uri ->
-                                validateAndGetIterations()?.let { iters ->
-                                    fileOpsViewModel.encryptFile(uri, password, algorithm, iters) { _, _ -> }
+                            validateAndGetIterations()?.let {
+                                val suggestedName = encFileName.let { name ->
+                                    if (name.contains('.')) name.substringBeforeLast('.') + ".enc"
+                                    else "$name.enc"
                                 }
+                                encOutputLauncher.launch(suggestedName)
                             }
                         },
                         decFileUri = decFileUri,
@@ -291,10 +324,12 @@ fun HomeScreen(
                         },
                         decFileState = decFileState,
                         onDecryptFile = {
-                            decFileUri?.let { uri ->
-                                validateAndGetIterations()?.let { iters ->
-                                    fileOpsViewModel.decryptFile(uri, password, algorithm, iters) { _, _ -> }
+                            validateAndGetIterations()?.let {
+                                val suggestedName = decFileName.let { name ->
+                                    if (name.contains('.')) name.substringBeforeLast('.') + ".dec"
+                                    else "$name.dec"
                                 }
+                                decOutputLauncher.launch(suggestedName)
                             }
                         },
                         isZh = isZh
