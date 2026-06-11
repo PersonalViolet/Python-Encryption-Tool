@@ -17,12 +17,6 @@ jobs:
   lint-and-test:
     name: Lint & Unit Tests
     runs-on: ubuntu-22.04
-    defaults:
-      run:
-        working-directory: android
-    env:
-      ANDROID_HOME: /usr/local/lib/android/sdk
-      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -33,27 +27,31 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Verify Android SDK
+      - name: Install Gradle 8.7
         run: |
+          wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip -O /tmp/gradle.zip
+          sudo unzip -q /tmp/gradle.zip -d /opt
+          echo "/opt/gradle-8.7/bin" >> $GITHUB_PATH
+
+      - name: Verify Android SDK & create local.properties
+        run: |
+          export ANDROID_HOME=/usr/local/lib/android/sdk
           echo "ANDROID_HOME=$ANDROID_HOME"
-          echo "sdk.dir=$ANDROID_HOME" > local.properties
-          ls -la $ANDROID_HOME/platforms/ 2>/dev/null || echo "No platforms dir"
-          ls -la $ANDROID_HOME/build-tools/ 2>/dev/null || echo "No build-tools dir"
-          # If no platforms, install android-34
-          if [ ! -d "$ANDROID_HOME/platforms" ]; then
+          ls -la $ANDROID_HOME/platforms/ 2>/dev/null || echo "No platforms found, installing..."
+          if [ ! -d "$ANDROID_HOME/platforms/android-34" ]; then
             if [ -f "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
-              yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
-              $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-34"
+              yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
+              $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" > /dev/null 2>&1 || true
             fi
           fi
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: 8.7
+          echo "sdk.dir=$ANDROID_HOME" > android/local.properties
 
       - name: Run unit tests
-        run: ./gradlew testDebugUnitTest --info 2>&1 | tail -100
+        working-directory: android
+        run: gradle testDebugUnitTest 2>&1 | tail -80
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
+          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
 
       - name: Upload test reports
         uses: actions/upload-artifact@v4
@@ -67,12 +65,6 @@ jobs:
     name: Build Debug APK
     runs-on: ubuntu-22.04
     needs: lint-and-test
-    defaults:
-      run:
-        working-directory: android
-    env:
-      ANDROID_HOME: /usr/local/lib/android/sdk
-      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -83,15 +75,20 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: 8.7
+      - name: Install Gradle 8.7
+        run: |
+          wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip -O /tmp/gradle.zip
+          sudo unzip -q /tmp/gradle.zip -d /opt
+          echo "/opt/gradle-8.7/bin" >> $GITHUB_PATH
 
-      - name: Assemble debug APK
+      - name: Build APK
+        working-directory: android
         run: |
           echo "sdk.dir=/usr/local/lib/android/sdk" > local.properties
-          ./gradlew assembleDebug
+          gradle assembleDebug
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
+          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
