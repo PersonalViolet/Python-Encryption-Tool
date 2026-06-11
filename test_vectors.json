@@ -1,0 +1,20 @@
+{
+  "aes256": {
+    "password": "test",
+    "text": "hello",
+    "iterations": 10000,
+    "encrypted": "DCX02TStOlh9mN7rfzzgAoKttXiCm6hsIGf+FbVhz8f3kGhvclYlxOqhuWUfmAow"
+  },
+  "aes128": {
+    "password": "mypassword",
+    "text": "hello world",
+    "iterations": 10000,
+    "encrypted": "r+qNlJi5iWsX7LfLKWsjcNrDlmDW6bfK2ARAPX3rOFBUq8i7CdzJS5NqUt8xNOi1"
+  },
+  "aes192": {
+    "password": "pass456",
+    "text": "test123",
+    "iterations": 10000,
+    "encrypted": "452+rxgUE/COpdnsmJzN+ZTcwW38RWOD/Ovetz1441Rejzew0cYWs2Oj5cuv9mwM"
+  }
+}

@@ -76,6 +76,46 @@ python main.py
 - **File Format**:
   - `[Salt (16 bytes)] [IV (16 bytes)] [Encrypted Data ...]`
 
+## Android App
+
+An Android mobile version is available in the `android/` directory.
+
+### Features
+- Same AES-CBC + PBKDF2 crypto as the desktop version — cross-platform compatible
+- Jetpack Compose UI with Material 3 design
+- Responsive layout: three-column on tablets, tab-based on phones
+- Chinese/English language switching
+- Settings persistence via DataStore
+
+### Build & Run
+
+**Option 1: Android Studio** (recommended)
+1. Open the `android/` directory in Android Studio
+2. Wait for Gradle sync to complete
+3. Click **Run** to deploy to a connected device or emulator
+
+**Option 2: Command Line**
+```bash
+# First, generate the Gradle wrapper (requires Gradle installed):
+cd android
+gradle wrapper
+
+# Or open the project in Android Studio which auto-generates the wrapper.
+# Then build:
+cd android
+./gradlew assembleDebug
+# APK output: android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+**Run unit tests:**
+```bash
+cd android
+./gradlew testDebugUnitTest
+```
+
+### CI/CD
+GitHub Actions (`.github/workflows/android-build.yml`) automatically builds and tests the Android app on every push. The debug APK is uploaded as an artifact.
+
 # ⚠️ 免责声明
 
 本仓库包含的加密/解密程序仅为**学习、研究和实验目的**而提供。作者不保证其安全性、完整性或适用性，使用本程序所产生的一切风险及后果由使用者自行承担。

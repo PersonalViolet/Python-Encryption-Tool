@@ -2,3 +2,32 @@
 .venv/
 venv/
 env/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# IDE
+.idea/
+*.iml
+
+# Logs
+*.log
+
+# Build outputs
+*.spec
+build/
+dist/
+
+# Android
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/captures/
+android/.externalNativeBuild/
+
+# OS
+.DS_Store
+Thumbs.db
