@@ -16,7 +16,6 @@ on:
 jobs:
   lint-and-test:
     name: Lint & Unit Tests
-    # ubuntu-22.04 has Android SDK pre-installed at /usr/local/lib/android/sdk
     runs-on: ubuntu-22.04
     defaults:
       run:
@@ -34,13 +33,27 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: Verify Android SDK
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          ls -la $ANDROID_HOME/platforms/ 2>/dev/null || echo "No platforms dir"
+          ls -la $ANDROID_HOME/build-tools/ 2>/dev/null || echo "No build-tools dir"
+          # If no platforms, install android-34
+          if [ ! -d "$ANDROID_HOME/platforms" ]; then
+            if [ -f "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
+              yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
+              $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-34"
+            fi
+          fi
+
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: 8.7
 
       - name: Run unit tests
-        run: ./gradlew testDebugUnitTest
+        run: ./gradlew testDebugUnitTest --info 2>&1 | tail -100
 
       - name: Upload test reports
         uses: actions/upload-artifact@v4
@@ -76,7 +89,9 @@ jobs:
           gradle-version: 8.7
 
       - name: Assemble debug APK
-        run: ./gradlew assembleDebug
+        run: |
+          echo "sdk.dir=/usr/local/lib/android/sdk" > local.properties
+          ./gradlew assembleDebug
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
