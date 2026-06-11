@@ -6,7 +6,6 @@ import com.example.encryptapp.core.crypto.CryptoManager
 import com.example.encryptapp.core.domain.model.Algorithm
 import com.example.encryptapp.ui.components.LogEntry
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -39,7 +38,7 @@ class TextEncryptViewModel @Inject constructor(
 
         _state.value = _state.value.copy(isProcessing = true, error = null, result = null)
 
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             try {
                 val encrypted = cryptoManager.encryptText(text.trimEnd(), password, algorithm)
                 val entry = LogEntry("Encrypted ($algorithm):\n$encrypted")
