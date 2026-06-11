@@ -32,17 +32,24 @@ jobs:
           wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip -O /tmp/gradle.zip
           sudo unzip -q /tmp/gradle.zip -d /opt
           echo "/opt/gradle-8.7/bin" >> $GITHUB_PATH
-          /opt/gradle-8.7/bin/gradle --version
 
       - name: Setup Android SDK
         run: |
-          export ANDROID_HOME=/usr/local/lib/android/sdk
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          echo "sdk.dir=$ANDROID_HOME" > android/local.properties
+          export SDK=/usr/local/lib/android/sdk
+          echo "ANDROID_HOME=$SDK"
+          # Ensure required platform is installed
+          if [ ! -d "$SDK/platforms/android-34" ]; then
+            echo "Installing android-34 platform..."
+            if [ -f "$SDK/cmdline-tools/latest/bin/sdkmanager" ]; then
+              yes | $SDK/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
+              $SDK/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" > /dev/null 2>&1
+            fi
+          fi
+          echo "sdk.dir=$SDK" > android/local.properties
 
       - name: Run unit tests
         working-directory: android
-        run: /opt/gradle-8.7/bin/gradle testDebugUnitTest
+        run: /opt/gradle-8.7/bin/gradle testDebugUnitTest 2>&1 | tail -60
         env:
           ANDROID_HOME: /usr/local/lib/android/sdk
 
@@ -72,13 +79,21 @@ jobs:
         run: |
           wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip -O /tmp/gradle.zip
           sudo unzip -q /tmp/gradle.zip -d /opt
-          /opt/gradle-8.7/bin/gradle --version
+
+      - name: Setup Android SDK
+        run: |
+          export SDK=/usr/local/lib/android/sdk
+          if [ ! -d "$SDK/platforms/android-34" ]; then
+            if [ -f "$SDK/cmdline-tools/latest/bin/sdkmanager" ]; then
+              yes | $SDK/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
+              $SDK/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" > /dev/null 2>&1
+            fi
+          fi
+          echo "sdk.dir=$SDK" > android/local.properties
 
       - name: Build APK
         working-directory: android
-        run: |
-          echo "sdk.dir=/usr/local/lib/android/sdk" > local.properties
-          /opt/gradle-8.7/bin/gradle assembleDebug
+        run: /opt/gradle-8.7/bin/gradle assembleDebug
         env:
           ANDROID_HOME: /usr/local/lib/android/sdk
 
