@@ -98,6 +98,21 @@ fun HomeScreen(
 
     val isZh = language == "zh"
 
+    // Shared helper to validate and get iterations (used by launchers and panels)
+    fun validateAndGetIterations(): Int? {
+        val v = homeViewModel.validateIterations()
+        return if (v is IterationsValidation.Valid) {
+            v.value
+        } else {
+            Toast.makeText(
+                context,
+                if (isZh) "无效的迭代次数！" else "Invalid iterations!",
+                Toast.LENGTH_SHORT
+            ).show()
+            null
+        }
+    }
+
     BoxWithConstraints(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.TopStart
@@ -125,21 +140,6 @@ fun HomeScreen(
                     .fillMaxSize()
                     .padding(padding)
             ) {
-                // Shared helper to validate and get iterations
-                fun validateAndGetIterations(): Int? {
-                    val v = homeViewModel.validateIterations()
-                    return if (v is IterationsValidation.Valid) {
-                        v.value
-                    } else {
-                        Toast.makeText(
-                            context,
-                            if (isZh) "无效的迭代次数！" else "Invalid iterations!",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                        null
-                    }
-                }
-
                 // Control bar
                 ControlPanel(
                     password = password,
