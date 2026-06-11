@@ -32,26 +32,19 @@ jobs:
           wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip -O /tmp/gradle.zip
           sudo unzip -q /tmp/gradle.zip -d /opt
           echo "/opt/gradle-8.7/bin" >> $GITHUB_PATH
+          /opt/gradle-8.7/bin/gradle --version
 
-      - name: Verify Android SDK & create local.properties
+      - name: Setup Android SDK
         run: |
           export ANDROID_HOME=/usr/local/lib/android/sdk
           echo "ANDROID_HOME=$ANDROID_HOME"
-          ls -la $ANDROID_HOME/platforms/ 2>/dev/null || echo "No platforms found, installing..."
-          if [ ! -d "$ANDROID_HOME/platforms/android-34" ]; then
-            if [ -f "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
-              yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
-              $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" > /dev/null 2>&1 || true
-            fi
-          fi
           echo "sdk.dir=$ANDROID_HOME" > android/local.properties
 
       - name: Run unit tests
         working-directory: android
-        run: gradle testDebugUnitTest 2>&1 | tail -80
+        run: /opt/gradle-8.7/bin/gradle testDebugUnitTest
         env:
           ANDROID_HOME: /usr/local/lib/android/sdk
-          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
 
       - name: Upload test reports
         uses: actions/upload-artifact@v4
@@ -79,16 +72,15 @@ jobs:
         run: |
           wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip -O /tmp/gradle.zip
           sudo unzip -q /tmp/gradle.zip -d /opt
-          echo "/opt/gradle-8.7/bin" >> $GITHUB_PATH
+          /opt/gradle-8.7/bin/gradle --version
 
       - name: Build APK
         working-directory: android
         run: |
           echo "sdk.dir=/usr/local/lib/android/sdk" > local.properties
-          gradle assembleDebug
+          /opt/gradle-8.7/bin/gradle assembleDebug
         env:
           ANDROID_HOME: /usr/local/lib/android/sdk
-          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
