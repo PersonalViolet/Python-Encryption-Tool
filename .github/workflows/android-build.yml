@@ -16,10 +16,14 @@ on:
 jobs:
   lint-and-test:
     name: Lint & Unit Tests
-    runs-on: ubuntu-latest
+    # ubuntu-22.04 has Android SDK pre-installed at /usr/local/lib/android/sdk
+    runs-on: ubuntu-22.04
     defaults:
       run:
         working-directory: android
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,9 +33,6 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -51,11 +52,14 @@ jobs:
 
   build-apk:
     name: Build Debug APK
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: lint-and-test
     defaults:
       run:
         working-directory: android
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -65,9 +69,6 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
