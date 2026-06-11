@@ -61,6 +61,23 @@ fun HomeScreen(
     var decFileUri by remember { mutableStateOf<Uri?>(null) }
     var decFileName by remember { mutableStateOf("") }
 
+    val isZh = language == "zh"
+
+    // Shared helper — must be defined BEFORE the CreateDocument launchers below
+    fun validateAndGetIterations(): Int? {
+        val v = homeViewModel.validateIterations()
+        return if (v is IterationsValidation.Valid) {
+            v.value
+        } else {
+            Toast.makeText(
+                context,
+                if (isZh) "无效的迭代次数！" else "Invalid iterations!",
+                Toast.LENGTH_SHORT
+            ).show()
+            null
+        }
+    }
+
     // CreateDocument launchers for output file selection (SAF write permission)
     val encOutputLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/octet-stream")
@@ -68,7 +85,13 @@ fun HomeScreen(
         outputUri?.let { outUri ->
             encFileUri?.let { inUri ->
                 validateAndGetIterations()?.let { iters ->
-                    fileOpsViewModel.encryptFile(inUri, outUri, password, algorithm, iters) { success, path ->
+                    // Read latest values from ViewModel to avoid stale captured vars
+                    fileOpsViewModel.encryptFile(
+                        inUri, outUri,
+                        homeViewModel.password.value,
+                        homeViewModel.algorithm.value,
+                        iters
+                    ) { success, path ->
                         if (success) {
                             val msg = if (isZh) "保存至: $path" else "Saved to: $path"
                             Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
@@ -85,7 +108,13 @@ fun HomeScreen(
         outputUri?.let { outUri ->
             decFileUri?.let { inUri ->
                 validateAndGetIterations()?.let { iters ->
-                    fileOpsViewModel.decryptFile(inUri, outUri, password, algorithm, iters) { success, path ->
+                    // Read latest values from ViewModel to avoid stale captured vars
+                    fileOpsViewModel.decryptFile(
+                        inUri, outUri,
+                        homeViewModel.password.value,
+                        homeViewModel.algorithm.value,
+                        iters
+                    ) { success, path ->
                         if (success) {
                             val msg = if (isZh) "保存至: $path" else "Saved to: $path"
                             Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
@@ -93,23 +122,6 @@ fun HomeScreen(
                     }
                 }
             }
-        }
-    }
-
-    val isZh = language == "zh"
-
-    // Shared helper to validate and get iterations (used by launchers and panels)
-    fun validateAndGetIterations(): Int? {
-        val v = homeViewModel.validateIterations()
-        return if (v is IterationsValidation.Valid) {
-            v.value
-        } else {
-            Toast.makeText(
-                context,
-                if (isZh) "无效的迭代次数！" else "Invalid iterations!",
-                Toast.LENGTH_SHORT
-            ).show()
-            null
         }
     }
 
