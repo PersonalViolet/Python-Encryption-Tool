@@ -106,9 +106,22 @@ jobs:
           echo "=== Gradle Version ==="
           /opt/gradle-8.7/bin/gradle --version 2>&1 | head -3
           echo "=== Building ==="
-          /opt/gradle-8.7/bin/gradle assembleDebug --stacktrace --no-daemon 2>&1 | tail -120
+          set -o pipefail
+          /opt/gradle-8.7/bin/gradle assembleDebug --stacktrace --no-daemon 2>&1 | tee /tmp/build.log
         env:
           ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+
+      - name: Show build errors
+        if: failure()
+        run: |
+          echo "=== Last 200 lines ==="
+          tail -200 /tmp/build.log
+          echo "=== Error markers ==="
+          grep -iE 'error:|FAILED|Unresolved|Exception|BUILD FAILED|cannot find' /tmp/build.log || echo "(no markers)"
+
+      - name: List APK directory
+        if: always()
+        run: find android/app/build/outputs/apk/ -type f 2>/dev/null || echo "(dir not found)"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -116,3 +129,11 @@ jobs:
           name: app-debug
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
+
+      - name: Upload build log
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: build-log
+          path: /tmp/build.log
+          retention-days: 7
